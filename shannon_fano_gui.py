@@ -1,141 +1,595 @@
-"""Shannon-Fano text compression - simple GUI.
-
-A lighter alternative to app.py. Colours are left unset here so every widget
-follows the OS appearance consistently.
-"""
-
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 
-from shannon_fano_core import analyze, display_character
+from shannon_fano_core import analyze
 
 
-# ---------------- MAIN PROCESS ----------------
+# ============================================================
+# MAIN WINDOW
+# ============================================================
 
-def process_text():
-    text = input_text.get("1.0", tk.END).rstrip("\n")
+root = tk.Tk()
+root.title("Shannon-Fano Coding - Transmitter and Receiver")
+root.geometry("1200x750")
+root.minsize(1000, 650)
 
-    if not text:
-        messagebox.showwarning("Warning", "Please enter some text.")
-        return
 
-    result = analyze(text)
+# ============================================================
+# TITLE
+# ============================================================
 
-    # Clear previous output
-    code_table.delete("1.0", tk.END)
+title = tk.Label(
+    root,
+    text="SHANNON-FANO CODING",
+    font=("Arial", 22, "bold")
+)
+title.pack(pady=10)
 
-    code_table.insert(tk.END, "CHARACTER\tFREQUENCY\tCODE\n")
-    code_table.insert(tk.END, "-" * 40 + "\n")
+subtitle = tk.Label(
+    root,
+    text="Source Coding - Transmitter and Receiver",
+    font=("Arial", 12)
+)
+subtitle.pack(pady=(0, 10))
 
-    for character, freq in result.symbols:
-        code_table.insert(
-            tk.END,
-            f"{display_character(character)}\t\t{freq}\t\t"
-            f"{result.codes[character]}\n"
+
+# ============================================================
+# MAIN CONTAINER
+# ============================================================
+
+main_frame = tk.Frame(root)
+main_frame.pack(fill="both", expand=True, padx=15, pady=10)
+
+# ---------------- TRANSMITTER ----------------
+
+transmitter_frame = tk.LabelFrame(
+    main_frame,
+    text=" TRANSMITTER ",
+    font=("Arial", 14, "bold"),
+    padx=10,
+    pady=10
+)
+
+transmitter_frame.pack(
+    side="left",
+    fill="both",
+    expand=True,
+    padx=(0, 7)
+)
+
+# ---------------- RECEIVER ----------------
+
+receiver_frame = tk.LabelFrame(
+    main_frame,
+    text=" RECEIVER ",
+    font=("Arial", 14, "bold"),
+    padx=10,
+    pady=10
+)
+
+receiver_frame.pack(
+    side="right",
+    fill="both",
+    expand=True,
+    padx=(7, 0)
+)
+
+
+# ============================================================
+# TRANSMITTER
+# ============================================================
+
+tk.Label(
+    transmitter_frame,
+    text="Enter Message:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w")
+
+input_text = tk.Text(
+    transmitter_frame,
+    height=4,
+    font=("Consolas", 11),
+    wrap="word"
+)
+
+input_text.pack(fill="x", pady=5)
+
+
+# ---------------- BUTTON ----------------
+
+encode_button = tk.Button(
+    transmitter_frame,
+    text="GENERATE & TRANSMIT",
+    font=("Arial", 11, "bold"),
+    command=lambda: process_message()
+)
+
+encode_button.pack(pady=8)
+
+
+# ============================================================
+# FREQUENCY TABLE
+# ============================================================
+
+tk.Label(
+    transmitter_frame,
+    text="Character Frequency & Shannon-Fano Code",
+    font=("Arial", 11, "bold")
+).pack(anchor="w", pady=(5, 3))
+
+columns = ("character", "frequency", "probability", "code")
+
+table = ttk.Treeview(
+    transmitter_frame,
+    columns=columns,
+    show="headings",
+    height=8
+)
+
+table.heading("character", text="Character")
+table.heading("frequency", text="Frequency")
+table.heading("probability", text="Probability")
+table.heading("code", text="Code")
+
+table.column("character", width=100, anchor="center")
+table.column("frequency", width=80, anchor="center")
+table.column("probability", width=100, anchor="center")
+table.column("code", width=150, anchor="center")
+
+table.pack(fill="x", pady=5)
+
+
+# ============================================================
+# PARTITION DISPLAY
+# ============================================================
+
+tk.Label(
+    transmitter_frame,
+    text="Shannon-Fano Partitioning:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w", pady=(5, 3))
+
+partition_box = tk.Text(
+    transmitter_frame,
+    height=7,
+    font=("Consolas", 9),
+    wrap="word"
+)
+
+partition_box.pack(fill="both", expand=True)
+
+
+# ============================================================
+# TRANSMITTED DATA
+# ============================================================
+
+tk.Label(
+    transmitter_frame,
+    text="Encoded / Transmitted Data:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w", pady=(7, 3))
+
+encoded_box = tk.Text(
+    transmitter_frame,
+    height=4,
+    font=("Consolas", 9),
+    wrap="word"
+)
+
+encoded_box.pack(fill="x")
+
+
+# ============================================================
+# RECEIVER
+# ============================================================
+
+tk.Label(
+    receiver_frame,
+    text="Received Encoded Data:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w")
+
+received_box = tk.Text(
+    receiver_frame,
+    height=6,
+    font=("Consolas", 10),
+    wrap="word"
+)
+
+received_box.pack(fill="x", pady=5)
+
+
+# ============================================================
+# DECODE BUTTON
+# ============================================================
+
+decode_button = tk.Button(
+    receiver_frame,
+    text="RECEIVE & DECODE",
+    font=("Arial", 11, "bold"),
+    command=lambda: decode_received()
+)
+
+decode_button.pack(pady=8)
+
+
+# ============================================================
+# DECODED MESSAGE
+# ============================================================
+
+tk.Label(
+    receiver_frame,
+    text="Decoded / Received Message:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w")
+
+decoded_box = tk.Text(
+    receiver_frame,
+    height=5,
+    font=("Arial", 11),
+    wrap="word"
+)
+
+decoded_box.pack(fill="x", pady=5)
+
+
+# ============================================================
+# ANALYSIS RESULTS
+# ============================================================
+
+tk.Label(
+    receiver_frame,
+    text="Transmission Analysis:",
+    font=("Arial", 11, "bold")
+).pack(anchor="w", pady=(10, 3))
+
+analysis_box = tk.Text(
+    receiver_frame,
+    height=10,
+    font=("Consolas", 10),
+    wrap="word"
+)
+
+analysis_box.pack(fill="both", expand=True)
+
+
+# ============================================================
+# GLOBAL VARIABLES
+# ============================================================
+
+current_result = None
+
+
+# ============================================================
+# CHARACTER DISPLAY
+# ============================================================
+
+def display_character(character):
+
+    if character == " ":
+        return "[SPACE]"
+
+    if character == "\n":
+        return "[ENTER]"
+
+    if character == "\t":
+        return "[TAB]"
+
+    return character
+
+
+# ============================================================
+# PARTITION DISPLAY
+# ============================================================
+
+def generate_partition_text(symbols):
+
+    steps = []
+
+    def divide(items, prefix=""):
+
+        if len(items) <= 1:
+            return
+
+        total = sum(freq for _, freq in items)
+
+        running_sum = 0
+        split_index = 0
+        minimum_difference = float("inf")
+
+        for i in range(len(items) - 1):
+
+            running_sum += items[i][1]
+
+            difference = abs(
+                total - 2 * running_sum
+            )
+
+            if difference < minimum_difference:
+
+                minimum_difference = difference
+                split_index = i
+
+        left = items[:split_index + 1]
+        right = items[split_index + 1:]
+
+        left_text = " ".join(
+            f"{display_character(char)}:{freq}"
+            for char, freq in left
         )
 
-    encoded_output.delete("1.0", tk.END)
-    encoded_output.insert(tk.END, result.encoded)
+        right_text = " ".join(
+            f"{display_character(char)}:{freq}"
+            for char, freq in right
+        )
 
-    decoded_output.delete("1.0", tk.END)
-    decoded_output.insert(tk.END, result.decoded)
+        steps.append(
+            f"Partition {len(steps) + 1}\n"
+            f"  0 → {left_text}\n"
+            f"  1 → {right_text}\n"
+        )
 
-    compression_ratio = 100 - result.space_saved
+        divide(left, prefix + "0")
+        divide(right, prefix + "1")
 
-    results_label.config(
-        text=
-        f"Original Size      : {result.original_size} bits\n"
-        f"Compressed Size    : {result.compressed_size} bits\n"
-        f"Compression Ratio  : {compression_ratio:.2f}%\n"
-        f"Space Saving       : {result.space_saved:.2f}%\n"
-        f"Coding Efficiency  : {result.efficiency:.2f}%"
+    divide(symbols)
+
+    return "\n".join(steps)
+
+
+# ============================================================
+# TRANSMITTER PROCESS
+# ============================================================
+
+def process_message():
+
+    global current_result
+
+    text = input_text.get("1.0", "end-1c")
+
+    if not text:
+
+        messagebox.showwarning(
+            "Empty Input",
+            "Please enter some text."
+        )
+
+        return
+
+    try:
+
+        result = analyze(text)
+
+        current_result = result
+
+        # Clear old data
+
+        for item in table.get_children():
+            table.delete(item)
+
+        partition_box.delete("1.0", tk.END)
+        encoded_box.delete("1.0", tk.END)
+        received_box.delete("1.0", tk.END)
+        decoded_box.delete("1.0", tk.END)
+        analysis_box.delete("1.0", tk.END)
+
+        # ---------------- FREQUENCY TABLE ----------------
+
+        for character, frequency in result.symbols:
+
+            probability = result.probabilities[character]
+
+            code = result.codes[character]
+
+            table.insert(
+                "",
+                "end",
+                values=(
+                    display_character(character),
+                    frequency,
+                    f"{probability:.4f}",
+                    code
+                )
+            )
+
+        # ---------------- PARTITIONS ----------------
+
+        partition_text = generate_partition_text(
+            result.symbols
+        )
+
+        partition_box.insert(
+            tk.END,
+            partition_text
+        )
+
+        # ---------------- ENCODED DATA ----------------
+
+        encoded_box.insert(
+            tk.END,
+            result.encoded
+        )
+
+        messagebox.showinfo(
+            "Transmission Ready",
+            "Message has been encoded successfully.\n"
+            "The encoded data is ready for transmission."
+        )
+
+    except Exception as error:
+
+        messagebox.showerror(
+            "Error",
+            str(error)
+        )
+
+
+# ============================================================
+# RECEIVER PROCESS
+# ============================================================
+
+def decode_received():
+
+    global current_result
+
+    if current_result is None:
+
+        messagebox.showwarning(
+            "No Data",
+            "First generate the encoded data from the transmitter."
+        )
+
+        return
+
+    encoded_data = received_box.get(
+        "1.0",
+        "end-1c"
+    ).replace(" ", "").replace("\n", "")
+
+    if not encoded_data:
+
+        messagebox.showwarning(
+            "No Received Data",
+            "Please enter or transmit encoded data."
+        )
+
+        return
+
+    try:
+
+        # Decode using Shannon-Fano codes
+
+        reverse_codes = {
+            code: character
+            for character, code in current_result.codes.items()
+        }
+
+        current_code = ""
+        decoded = []
+
+        for bit in encoded_data:
+
+            if bit not in "01":
+
+                raise ValueError(
+                    "Encoded data must contain only 0 and 1."
+                )
+
+            current_code += bit
+
+            if current_code in reverse_codes:
+
+                decoded.append(
+                    reverse_codes[current_code]
+                )
+
+                current_code = ""
+
+        decoded_text = "".join(decoded)
+
+        # ---------------- DISPLAY ----------------
+
+        decoded_box.delete(
+            "1.0",
+            tk.END
+        )
+
+        decoded_box.insert(
+            tk.END,
+            decoded_text
+        )
+
+        # ---------------- ANALYSIS ----------------
+
+        analysis_box.delete(
+            "1.0",
+            tk.END
+        )
+
+        lossless = (
+            decoded_text == current_result.text
+        )
+
+        analysis_text = (
+            f"Original Size       : "
+            f"{current_result.original_size} bits\n\n"
+
+            f"Compressed Size     : "
+            f"{current_result.compressed_size} bits\n\n"
+
+            f"Entropy             : "
+            f"{current_result.entropy:.4f} bits/symbol\n\n"
+
+            f"Average Code Length : "
+            f"{current_result.average_length:.4f} bits/symbol\n\n"
+
+            f"Coding Efficiency   : "
+            f"{current_result.efficiency:.2f}%\n\n"
+
+            f"Space Saved         : "
+            f"{current_result.space_saved:.2f}%\n\n"
+
+            f"Transmission Status : "
+            f"{'LOSSLESS ✓' if lossless else 'ERROR ✗'}"
+        )
+
+        analysis_box.insert(
+            tk.END,
+            analysis_text
+        )
+
+        messagebox.showinfo(
+            "Receiver",
+            "Encoded data decoded successfully."
+        )
+
+    except Exception as error:
+
+        messagebox.showerror(
+            "Decoding Error",
+            str(error)
+        )
+
+
+# ============================================================
+# AUTO COPY TRANSMITTER → RECEIVER
+# ============================================================
+
+def transmit_data():
+
+    if current_result is None:
+        return
+
+    received_box.delete(
+        "1.0",
+        tk.END
+    )
+
+    received_box.insert(
+        tk.END,
+        current_result.encoded
     )
 
 
-# ---------------- GUI DESIGN ----------------
+# ============================================================
+# TRANSMIT BUTTON
+# ============================================================
 
-window = tk.Tk()
-window.title("Shannon-Fano Text Compression")
-window.geometry("900x750")
-
-tk.Label(
-    window,
-    text="SHANNON-FANO TEXT COMPRESSION",
-    font=("Arial", 20, "bold")
-).pack(pady=15)
-
-
-# Input section
-tk.Label(
-    window,
-    text="Enter Text:",
-    font=("Arial", 12, "bold")
-).pack(anchor="w", padx=20)
-
-input_text = tk.Text(window, height=5, width=100)
-input_text.pack(padx=20, pady=5)
-
-
-# Button
-tk.Button(
-    window,
-    text="COMPRESS & ANALYZE",
-    command=process_text,
-    font=("Arial", 11, "bold"),
-    padx=15,
-    pady=8
-).pack(pady=10)
-
-
-# Code table
-tk.Label(
-    window,
-    text="Shannon-Fano Codes:",
-    font=("Arial", 12, "bold")
-).pack(anchor="w", padx=20)
-
-code_table = tk.Text(window, height=10, width=100)
-code_table.pack(padx=20, pady=5)
-
-
-# Encoded text
-tk.Label(
-    window,
-    text="Encoded / Compressed Data:",
-    font=("Arial", 12, "bold")
-).pack(anchor="w", padx=20)
-
-encoded_output = tk.Text(window, height=4, width=100)
-encoded_output.pack(padx=20, pady=5)
-
-
-# Decoded text
-tk.Label(
-    window,
-    text="Decoded Text:",
-    font=("Arial", 12, "bold")
-).pack(anchor="w", padx=20)
-
-decoded_output = tk.Text(window, height=3, width=100)
-decoded_output.pack(padx=20, pady=5)
-
-
-# Results
-tk.Label(
-    window,
-    text="Compression Results:",
-    font=("Arial", 12, "bold")
-).pack(anchor="w", padx=20)
-
-results_label = tk.Label(
-    window,
-    text="Enter text and click the button.",
-    font=("Arial", 11),
-    justify="left"
+transmit_button = tk.Button(
+    transmitter_frame,
+    text="SEND DATA →",
+    font=("Arial", 10, "bold"),
+    command=transmit_data
 )
 
-results_label.pack(anchor="w", padx=20, pady=8)
+transmit_button.pack(
+    pady=5
+)
 
 
-if __name__ == "__main__":
-    window.mainloop()
+# ============================================================
+# START GUI
+# ============================================================
+
+root.mainloop()
+  
